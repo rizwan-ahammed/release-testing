@@ -75,7 +75,7 @@ jobs:
           SLACK_MENTIONS=$(echo "$RELEASE_APPROVERS" | jq -r 'to_entries | .[] | "<@" + .value + ">"' | tr '\n' ' ')
           
           # Format the mention text with all approvers
-          MENTION_TEXT="$SLACK_MENTIONS please review and approve for production deployment: ${{ steps.release.outputs.url }}"
+          MENTION_TEXT="$SLACK_MENTIONS please review and approve for production deployment"
           
           curl -X POST -H 'Content-type: application/json' \
            --data "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"📦 New release draft is created - *${{ steps.bump.outputs.new_tag }}*\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"$MENTION_TEXT\"}},{\"type\":\"divider\"},{\"type\":\"context\",\"elements\":[{\"type\":\"mrkdwn\",\"text\":\"🎯 *Release Information*\"}]},{\"type\":\"section\",\"accessory\":{\"type\":\"button\",\"text\":{\"type\":\"plain_text\",\"text\":\"View Release\",\"emoji\":true},\"url\":\"${{ steps.release.outputs.url }}\",\"style\":\"primary\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*Release Version:*\\n${{ steps.bump.outputs.new_tag }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Repository:*\\n${{ github.repository }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Draft URL:*\\n${{ steps.release.outputs.url }}\"}]}]}" \
