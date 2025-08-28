@@ -1,0 +1,117 @@
+name: Release Published Pipeline
+run-name: Pipeline triggered by published release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release-pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get release information
+        id: release_info
+        run: |
+          echo "release_tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
+          echo "release_body=${{ github.event.release.body }}" >> $GITHUB_OUTPUT
+          echo "release_url=${{ github.event.release.html_url }}" >> $GITHUB_OUTPUT
+
+      - name: Display release details
+        run: |
+          echo "🎉 Release Published!"
+          echo "Tag: ${{ steps.release_info.outputs.release_tag }}"
+          echo "Name: ${{ steps.release_info.outputs.release_name }}"
+          echo "URL: ${{ steps.release_info.outputs.release_url }}"
+          echo "Repository: ${{ github.repository }}"
+
+      - name: Run your pipeline steps
+        run: |
+          echo "🚀 Starting pipeline for release ${{ steps.release_info.outputs.release_tag }}"
+          # Add your pipeline steps here
+          # Examples:
+          # - Run tests
+          # - Build application
+          # - Deploy to production
+          # - Run security scans
+          # - Update documentation
+          
+          echo "Pipeline step 1: Running tests..."
+          sleep 2
+          
+          echo "Pipeline step 2: Building application..."
+          sleep 2
+          
+          echo "Pipeline step 3: Deploying to production..."
+          sleep 2
+          
+          echo "✅ Pipeline completed successfully!"
+
+      - name: Notify Slack about pipeline completion
+        if: success()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data "{
+              \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
+              \"text\": \":rocket: Pipeline completed for release *${{ steps.release_info.outputs.release_tag }}*\",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":rocket: *Pipeline Completed Successfully!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
+                },
+                {
+                  \"type\": \"section\",
+                  \"accessory\": {
+                    \"type\": \"button\",
+                    \"text\": {\"type\": \"plain_text\", \"text\": \"View Release\", \"emoji\": true},
+                    \"url\": \"${{ steps.release_info.outputs.release_url }}\",
+                    \"style\": \"primary\"
+                  },
+                  \"fields\": [
+                    {\"type\": \"mrkdwn\", \"text\": \"*Status:*\\n✅ Completed\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"}
+                  ]
+                }
+              ]
+            }" https://slack.com/api/chat.postMessage
+
+      - name: Notify Slack about pipeline failure
+        if: failure()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data "{
+              \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
+              \"text\": \":x: Pipeline failed for release *${{ steps.release_info.outputs.release_tag }}*\",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":x: *Pipeline Failed!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
+                },
+                {
+                  \"type\": \"section\",
+                  \"accessory\": {
+                    \"type\": \"button\",
+                    \"text\": {\"type\": \"plain_text\", \"text\": \"View Release\", \"emoji\": true},
+                    \"url\": \"${{ steps.release_info.outputs.release_url }}\",
+                    \"style\": \"danger\"
+                  },
+                  \"fields\": [
+                    {\"type\": \"mrkdwn\", \"text\": \"*Status:*\\n❌ Failed\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"}
+                  ]
+                }
+              ]
+            }" https://slack.com/api/chat.postMessage
