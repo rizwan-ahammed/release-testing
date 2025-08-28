@@ -1,4 +1,4 @@
-name: Release Please
+name: Release
 
 on:
   push:
@@ -21,9 +21,9 @@ jobs:
       - name: Install release-please
         run: npm install -g release-please
       
-      - name: Create Release
+      - name: Run release-please
         run: |
-          release-please github-release \
+          release-please release-pr \
             --repo-url=rizwan-ahammed/release-testing \
             --config-file=release-please-config.json \
             --token=${{ secrets.GITHUB_TOKEN }}
