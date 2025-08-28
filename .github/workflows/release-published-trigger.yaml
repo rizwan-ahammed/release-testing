@@ -23,7 +23,10 @@ jobs:
         run: |
           echo "release_tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
           echo "release_name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
-          echo "release_body=${{ github.event.release.body }}" >> $GITHUB_OUTPUT
+          # Handle multi-line release body using GitHub Actions multi-line output syntax
+          echo "release_body<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ github.event.release.body }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "release_url=${{ github.event.release.html_url }}" >> $GITHUB_OUTPUT
 
       - name: Display release details
