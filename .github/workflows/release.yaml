@@ -78,5 +78,5 @@ jobs:
           MENTION_TEXT="$SLACK_MENTIONS please review and approve for production deployment: ${{ steps.release.outputs.url }}"
           
           curl -X POST -H 'Content-type: application/json' \
-           --data "{\"text\":\"📦 New release draft is created - *${{ steps.bump.outputs.new_tag }}*\n\n$MENTION_TEXT\"}" \
+           --data "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"📦 New release draft is created - *${{ steps.bump.outputs.new_tag }}*\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"$MENTION_TEXT\"}},{\"type\":\"divider\"},{\"type\":\"section\",\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*Release Version:*\\n${{ steps.bump.outputs.new_tag }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Repository:*\\n${{ github.repository }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Draft URL:*\\n${{ steps.release.outputs.url }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Changelog:*\\nhttps://github.com/${{ github.repository }}/compare/${{ steps.lasttag.outputs.tag }}...${{ steps.bump.outputs.new_tag }}\"}]}]}" \
             ${{ secrets.SLACK_WEBHOOK }}
