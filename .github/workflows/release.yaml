@@ -69,16 +69,25 @@ jobs:
       - name: Send Draft Release URL to Slack
         id: slack_release
         run: |
+          # Get release approvers from GitHub variables (JSON format)
+          RELEASE_APPROVERS='${{ vars.RELEASE_APPROVERS }}'
+          
+          # Extract all Slack IDs from JSON and format as mentions
+          SLACK_MENTIONS=$(echo "$RELEASE_APPROVERS" | jq -r 'to_entries | .[] | "<@" + .value + ">"' | tr '\n' ' ')
+          
+          # Format the mention text with all approvers
+          MENTION_TEXT="$SLACK_MENTIONS please review and publish for production deployment"
+          
           response=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
             -H 'Content-type: application/json' \
             --data "{
               \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
-              \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}* \",
+              \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}* $MENTION_TEXT\",
               \"blocks\": [
                 {
                   \"type\": \"section\",
-                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}*\"}
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}*\\n\\n$MENTION_TEXT\"}
                 },
                 {
                   \"type\": \"section\",
