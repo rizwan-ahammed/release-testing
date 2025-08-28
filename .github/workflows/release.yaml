@@ -37,9 +37,9 @@ jobs:
           PREV_TAG="${{ steps.lasttag.outputs.tag }}"
           NEW_TAG="${{ steps.bump.outputs.new_tag }}"
           if [ "$PREV_TAG" = "0.0.0" ]; then
-            LOG=$(git log --pretty=format:"- %s")
+            LOG=$(git log --pretty=format:"- %s (%an)")
           else
-            LOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s")
+            LOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%an)")
           fi
           echo "log<<EOF" >> $GITHUB_OUTPUT
           echo "$LOG" >> $GITHUB_OUTPUT
@@ -56,3 +56,4 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
