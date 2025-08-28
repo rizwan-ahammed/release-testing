@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write        # required to create branches/tags
+  pull-requests: write   # required to create PRs
+  
 jobs:
   release:
     name: Create Draft Release
