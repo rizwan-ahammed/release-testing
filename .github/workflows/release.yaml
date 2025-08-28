@@ -50,7 +50,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.bump.outputs.new_tag }}
-          name: "🎉🚀 Release ${{ steps.bump.outputs.new_tag }} ✨🔥"
+          name: "🚀 Release ${{ steps.bump.outputs.new_tag }}"
           body: |
             ## Release Notes
             <!-- add any release notes here -->
@@ -58,7 +58,10 @@ jobs:
             ## 🔥 What's Changed
             ${{ steps.changelog.outputs.log }}
 
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.lasttag.outputs.tag }}...${{ steps.bump.outputs.new_tag }}
+            ---
+            
+            ## 📋 Full Changelog
+            🔗 **[View all changes →](https://github.com/${{ github.repository }}/compare/${{ steps.lasttag.outputs.tag }}...${{ steps.bump.outputs.new_tag }})**
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
