@@ -75,8 +75,8 @@ jobs:
           SLACK_MENTIONS=$(echo "$RELEASE_APPROVERS" | jq -r 'to_entries | .[] | "<@" + .value + ">"' | tr '\n' ' ')
           
           # Format the mention text with all approvers
-          MENTION_TEXT="$SLACK_MENTIONS please review this draft release and approve! 🎯 \n\n {{ steps.release.outputs.url }}"
+          MENTION_TEXT="$SLACK_MENTIONS please review and approve for production deployment: ${{ steps.release.outputs.url }}"
           
           curl -X POST -H 'Content-type: application/json' \
-           --data "{\"text\":\"🚀 *New Draft Release Created*\n\n📋 **Release**: ${{ steps.bump.outputs.new_tag }}\n🔗 **Draft URL**: ${{ steps.release.outputs.url }}\n\n\n\n$MENTION_TEXT\"}" \
+           --data "{\"text\":\"🚀 New release draft is created - **${{ steps.bump.outputs.new_tag }}**\n\n$MENTION_TEXT\"}" \
             ${{ secrets.SLACK_WEBHOOK }}
