@@ -1,60 +1,59 @@
-name: Release
+name: Custom Release
 
 on:
   push:
     branches:
       - main
 
-permissions:
-  contents: write        # required to create branches/tags
-  pull-requests: write   # required to create PRs
-  
 jobs:
   release:
-    name: Create Draft Release
+    if: contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          fetch-depth: 0   # we need full history to generate changelog
 
-      - name: Run Release Please
-        id: release
-        uses: googleapis/release-please-action@v4
-        with:
-          release-type: simple
-          token: ${{ secrets.GITHUB_TOKEN }}
-          default-branch: main
-          bump-minor-pre-major: true
-          bump-patch-for-minor-pre-major: true
-          draft: true
-          command: github-release
-
-      - name: Generate commit changelog
-        id: changelog
+      - name: Get last tag
+        id: lasttag
         run: |
           git fetch --tags
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ || echo "")
-          echo "Previous tag: $PREV_TAG"
-          if [ -z "$PREV_TAG" ]; then
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Bump minor version
+        id: bump
+        run: |
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${{ steps.lasttag.outputs.tag }}"
+          NEW_TAG="$MAJOR.$((MINOR+1)).0"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG="${{ steps.lasttag.outputs.tag }}"
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
+          if [ "$PREV_TAG" = "0.0.0" ]; then
             LOG=$(git log --pretty=format:"- %s")
           else
             LOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s")
           fi
-          echo "LOG<<EOF" >> $GITHUB_ENV
-          echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "log<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update Draft Release Notes
-        uses: ncipollo/release-action@v1
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
         with:
-          allowUpdates: true
-          draft: true
-          tag: ${{ steps.release.outputs.tag_name }}
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          name: "Release ${{ steps.bump.outputs.new_tag }}"
           body: |
             ## What's Changed
-            ${{ env.LOG }}
+            ${{ steps.changelog.outputs.log }}
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
