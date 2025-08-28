@@ -46,6 +46,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create draft release
+        id: release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.bump.outputs.new_tag }}
@@ -56,4 +57,7 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show release URL
+        run: echo "Release URL is ${{ steps.release.outputs.url }}"
 
