@@ -1,5 +1,5 @@
 name: Custom Release
-
+run-name: Production Release Drafter
 on:
   push:
     branches:
@@ -65,4 +65,18 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      
+      - name: Send Draft Release URL to Slack   
+        run: |
+          # Get release approvers from GitHub variables (JSON format)
+          RELEASE_APPROVERS='${{ vars.RELEASE_APPROVERS }}'
+          
+          # Extract all Slack IDs from JSON and format as mentions
+          SLACK_MENTIONS=$(echo "$RELEASE_APPROVERS" | jq -r 'to_entries | .[] | "<@" + .value + ">"' | tr '\n' ' ')
+          
+          # Format the mention text with all approvers
+          MENTION_TEXT="$SLACK_MENTIONS please review this draft release and approve! 🎯"
+          
+          curl -X POST -H 'Content-type: application/json' \
+           --data "{\"text\":\"🚀 *New Draft Release Created*\n\n📋 **Release**: ${{ steps.bump.outputs.new_tag }}\n🔗 **Draft URL**: ${{ steps.release.outputs.url }}\n📜 **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.lasttag.outputs.tag }}...${{ steps.bump.outputs.new_tag }}\n\n⚠️ *Please review and approve the release before publishing*\n\n$MENTION_TEXT\"}" \
+            ${{ secrets.SLACK_WEBHOOK }}
