@@ -66,17 +66,47 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Send Draft Release URL to Slack   
+      - name: Send Draft Release URL to Slack
+        id: slack_release
         run: |
-          # Get release approvers from GitHub variables (JSON format)
-          RELEASE_APPROVERS='${{ vars.RELEASE_APPROVERS }}'
-          
-          # Extract all Slack IDs from JSON and format as mentions
-          SLACK_MENTIONS=$(echo "$RELEASE_APPROVERS" | jq -r 'to_entries | .[] | "<@" + .value + ">"' | tr '\n' ' ')
-          
-          # Format the mention text with all approvers
-          MENTION_TEXT="$SLACK_MENTIONS please review and publish for production deployment"
-          
-          curl -X POST -H 'Content-type: application/json' \
-           --data "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"📦 New release draft is created - *${{ steps.bump.outputs.new_tag }}*\"}},{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"$MENTION_TEXT\"}},{\"type\":\"divider\"},{\"type\":\"context\",\"elements\":[{\"type\":\"mrkdwn\",\"text\":\"🎯 *Release Information*\"}]},{\"type\":\"section\",\"accessory\":{\"type\":\"button\",\"text\":{\"type\":\"plain_text\",\"text\":\"View Release\",\"emoji\":true},\"url\":\"${{ steps.release.outputs.url }}\",\"style\":\"primary\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*Release Version:*\\n${{ steps.bump.outputs.new_tag }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Repository:*\\n${{ github.repository }}\"},{\"type\":\"mrkdwn\",\"text\":\"*Draft URL:*\\n${{ steps.release.outputs.url }}\"}]}]}" \
-            ${{ secrets.SLACK_WEBHOOK }}
+          response=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data "{
+              \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
+              \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}* \",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":package: New release draft is created - *${{ steps.bump.outputs.new_tag }}*\"}
+                },
+                {
+                  \"type\": \"section\",
+                  \"accessory\": {
+                    \"type\": \"button\",
+                    \"text\": {\"type\": \"plain_text\", \"text\": \"View Release\", \"emoji\": true},
+                    \"url\": \"${{ steps.release.outputs.url }}\",
+                    \"style\": \"primary\"
+                  },
+                  \"fields\": [
+                    {\"type\": \"mrkdwn\", \"text\": \"*Release Version:*\\n${{ steps.bump.outputs.new_tag }}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"}
+                  ]
+                }
+              ]
+            }" https://slack.com/api/chat.postMessage)
+
+          echo "slack_ts=$(echo $response | jq -r '.ts')" >> $GITHUB_OUTPUT
+          echo "slack_channel=$(echo $response | jq -r '.channel')" >> $GITHUB_OUTPUT
+
+      - name: Send follow-up thread message
+        if: always()   # you can adjust condition to only send after deploy
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data "{
+              \"channel\": \"${{ steps.slack_release.outputs.slack_channel }}\",
+              \"text\": \":white_check_mark: Deployment finished successfully!\",
+              \"thread_ts\": \"${{ steps.slack_release.outputs.slack_ts }}\"
+            }" https://slack.com/api/chat.postMessage
