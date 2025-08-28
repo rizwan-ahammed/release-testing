@@ -50,14 +50,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.bump.outputs.new_tag }}
-          name: "Release ${{ steps.bump.outputs.new_tag }}"
+          name: "🎉🚀 Release ${{ steps.bump.outputs.new_tag }} ✨🔥"
           body: |
-            ## What's Changed
+            ## Release Notes
+            <!-- add any release notes here -->
+
+            ## 🔥 What's Changed
             ${{ steps.changelog.outputs.log }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.lasttag.outputs.tag }}...${{ steps.bump.outputs.new_tag }}
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Show release URL
-        run: echo "Release URL is ${{ steps.release.outputs.url }}"
 
