@@ -10,5 +10,6 @@
   },
   "bootstrap-sha": "HEAD",
   "release-type": "simple",
-  "include-v-in-tag": true
+  "include-v-in-tag": true,
+  "manifest-file": ".release-please-manifest.json"
 }
