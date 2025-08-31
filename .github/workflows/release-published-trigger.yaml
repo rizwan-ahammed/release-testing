@@ -43,6 +43,8 @@ jobs:
           cd combat-infra
           # checkout the main branch
           git checkout release-test
+          git config --global user.email "netra-release-bot@github.com"
+          git config --global user.name "Netra Release Bot"
           # Update image tag in values.yaml
           sed -i "s/tag: .*/tag: ${{ steps.release_info.outputs.release_tag }}/" k8s/netra-services/nginx/dev/ap-south-1/values.yaml
           
