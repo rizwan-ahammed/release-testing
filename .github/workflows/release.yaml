@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      variables: write
 
     steps:
       - name: Checkout
@@ -45,6 +46,7 @@ jobs:
           echo "$LOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # docker image build and push to ECR
       - name: Create draft release
         id: release
         uses: softprops/action-gh-release@v2
@@ -107,15 +109,22 @@ jobs:
 
           echo "slack_ts=$(echo $response | jq -r '.ts')" >> $GITHUB_OUTPUT
           echo "slack_channel=$(echo $response | jq -r '.channel')" >> $GITHUB_OUTPUT
+          
+          # Store Slack timestamp as environment variable for use in other workflows
+          echo "SLACK_TS=$(echo $response | jq -r '.ts')" >> $GITHUB_ENV
+          
+          # Store Slack timestamp as repository variable for cross-workflow access
+          SLACK_TS_VALUE=$(echo $response | jq -r '.ts')
+          gh variable set SLACK_TS --body "$SLACK_TS_VALUE" --repo ${{ github.repository }}
 
-      - name: Send follow-up thread message
-        if: always()   # you can adjust condition to only send after deploy
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
-            -H 'Content-type: application/json' \
-            --data "{
-              \"channel\": \"${{ steps.slack_release.outputs.slack_channel }}\",
-              \"text\": \":white_check_mark: Deployment finished successfully!\",
-              \"thread_ts\": \"${{ steps.slack_release.outputs.slack_ts }}\"
-            }" https://slack.com/api/chat.postMessage
+      # - name: Send follow-up thread message
+      #   if: always()   # you can adjust condition to only send after deploy
+      #   run: |
+      #     curl -s -X POST \
+      #       -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+      #       -H 'Content-type: application/json' \
+      #       --data "{
+      #         \"channel\": \"${{ steps.slack_release.outputs.slack_channel }}\",
+      #         \"text\": \":white_check_mark: Deployment finished successfully!\",
+      #         \"thread_ts\": \"${{ steps.slack_release.outputs.slack_ts }}\"
+      #       }" https://slack.com/api/chat.postMessage
