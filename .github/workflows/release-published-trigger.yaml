@@ -39,16 +39,17 @@ jobs:
       - name: push tag to combat-infra helm repo
         run: |
           # Clone combat-infra repo using SSH
-          git clone git@github.com:${{ vars.COMBAT_INFRA_REPO }}.git combat-infra
+          git clone git@github.com:KeyValueSoftwareSystems/combat-infra.git combat-infra
           cd combat-infra
-          
+          # checkout the main branch
+          git checkout release-test
           # Update image tag in values.yaml
-          sed -i "s/tag: .*/tag: ${{ steps.release_info.outputs.release_tag }}/" values.yaml
+          sed -i "s/tag: .*/tag: ${{ steps.release_info.outputs.release_tag }}/" k8s/netra-services/nginx/dev/ap-south-1/values.yaml
           
           # Commit and push
-          git add values.yaml
-          git commit -m "Update to version ${{ steps.release_info.outputs.release_tag }}"
-          git push origin main
+          git add k8s/netra-services/nginx/dev/ap-south-1/values.yaml
+          git commit -m "Release version to ${{ steps.release_info.outputs.release_tag }}"
+          git push origin release-test
           
       - name: Run deployment to production
         run: |
