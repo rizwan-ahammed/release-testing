@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # Database migration test
+  db-migrate:
+    build: .
+    environment:
+      ENV: "db migrate"
+    container_name: db-migrate-test
+
+  # API server test
+  api-server:
+    build: .
+    environment:
+      ENV: "api"
+    container_name: api-server-test
+    ports:
+      - "8080:8080"

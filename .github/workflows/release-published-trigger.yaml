@@ -29,36 +29,31 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "release_url=${{ github.event.release.html_url }}" >> $GITHUB_OUTPUT
 
-      - name: Display release details
+      - name: Setup SSH
         run: |
-          echo "🎉 Release Published!"
-          echo "Tag: ${{ steps.release_info.outputs.release_tag }}"
-          echo "Name: ${{ steps.release_info.outputs.release_name }}"
-          echo "URL: ${{ steps.release_info.outputs.release_url }}"
-          echo "Repository: ${{ github.repository }}"
-
-      - name: Run your pipeline steps
+          mkdir -p ~/.ssh
+          echo "${{ secrets.COMBAT_INFRA_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          
+      - name: push tag to combat-infra helm repo
         run: |
-          echo "🚀 Starting pipeline for release ${{ steps.release_info.outputs.release_tag }}"
-          # Add your pipeline steps here
-          # Examples:
-          # - Run tests
-          # - Build application
-          # - Deploy to production
-          # - Run security scans
-          # - Update documentation
+          # Clone combat-infra repo using SSH
+          git clone git@github.com:${{ vars.COMBAT_INFRA_REPO }}.git combat-infra
+          cd combat-infra
           
-          echo "Pipeline step 1: Running tests..."
-          sleep 2
+          # Update image tag in values.yaml
+          sed -i "s/tag: .*/tag: ${{ steps.release_info.outputs.release_tag }}/" values.yaml
           
-          echo "Pipeline step 2: Building application..."
-          sleep 2
+          # Commit and push
+          git add values.yaml
+          git commit -m "Update to version ${{ steps.release_info.outputs.release_tag }}"
+          git push origin main
           
-          echo "Pipeline step 3: Deploying to production..."
-          sleep 2
+      - name: Run deployment to production
+        run: |
+          echo "Deployment completed"
           
-          echo "✅ Pipeline completed successfully!"
-
       - name: Notify Slack about pipeline completion
         if: success()
         run: |

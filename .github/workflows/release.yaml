@@ -44,8 +44,19 @@ jobs:
           echo "log<<EOF" >> $GITHUB_OUTPUT
           echo "$LOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+         role-to-assume: ${{ vars.AWS_ROLE }}
+         aws-region: ${{ vars.AWS_REGION }}
 
-      # docker image build and push to ECR
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: ${{ vars.ECR_REPO }}:${{ steps.bump.outputs.new_tag }}
+      
       - name: Create draft release
         id: release
         uses: softprops/action-gh-release@v2
@@ -112,10 +123,8 @@ jobs:
           # Store Slack timestamp as environment variable for use in other workflows
           echo "SLACK_TS=$(echo $response | jq -r '.ts')" >> $GITHUB_ENV
           
-          # Store Slack timestamp as repository variable for cross-workflow access
+          # Store Slack timestamp for cross-workflow access
           SLACK_TS_VALUE=$(echo $response | jq -r '.ts')
-          # Note: Repository variables can be set via GitHub API or manually in repository settings
-          # For now, we'll store it as an environment variable and job output
           echo "SLACK_TS_VALUE=$SLACK_TS_VALUE" >> $GITHUB_ENV
 
       # - name: Send follow-up thread message
