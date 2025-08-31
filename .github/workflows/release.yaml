@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      variables: write
 
     steps:
       - name: Checkout
@@ -115,7 +114,9 @@ jobs:
           
           # Store Slack timestamp as repository variable for cross-workflow access
           SLACK_TS_VALUE=$(echo $response | jq -r '.ts')
-          gh variable set SLACK_TS --body "$SLACK_TS_VALUE" --repo ${{ github.repository }}
+          # Note: Repository variables can be set via GitHub API or manually in repository settings
+          # For now, we'll store it as an environment variable and job output
+          echo "SLACK_TS_VALUE=$SLACK_TS_VALUE" >> $GITHUB_ENV
 
       # - name: Send follow-up thread message
       #   if: always()   # you can adjust condition to only send after deploy
