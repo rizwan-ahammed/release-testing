@@ -89,14 +89,37 @@ jobs:
             while true; do
               status=$(argocd app get nginx --output json | jq -r ".status.sync.status")
               health=$(argocd app get nginx --output json | jq -r ".status.health.status")
+              operation_phase=$(argocd app get nginx --output json | jq -r ".status.operationState.phase // \"NoOperation\"")
               
-              echo "Sync Status: $status, Health Status: $health"
+              echo "Sync Status: $status, Health Status: $health, Operation Phase: $operation_phase"
               
+              # If operation is running, wait for it to complete
+              if [ "$operation_phase" = "Running" ]; then
+                echo "⏳ Operation in progress, waiting for completion..."
+                sleep 10
+                continue
+              fi
+              
+              # Check final status after operation completes
               if [ "$status" = "Synced" ] && [ "$health" = "Healthy" ]; then
                 echo "✅ Deployment successful!"
                 exit 0
-              elif [ "$status" = "OutOfSync" ] || [ "$status" = "Unknown" ]; then
-                echo "❌ Deployment failed!"
+              elif [ "$status" = "OutOfSync" ] && [ "$health" = "Healthy" ]; then
+                echo "⚠️ App is OutOfSync but Healthy - this might be expected during updates"
+                echo "Waiting a bit more to see if it syncs..."
+                sleep 20
+                # Check again after waiting
+                final_check_status=$(argocd app get nginx --output json | jq -r ".status.sync.status")
+                final_check_health=$(argocd app get nginx --output json | jq -r ".status.health.status")
+                if [ "$final_check_status" = "Synced" ] && [ "$final_check_health" = "Healthy" ]; then
+                  echo "✅ Deployment successful after waiting!"
+                  exit 0
+                else
+                  echo "❌ Still OutOfSync after waiting, considering as failed"
+                  exit 1
+                fi
+              elif [ "$status" = "Unknown" ]; then
+                echo "❌ Deployment failed with Unknown status!"
                 exit 1
               fi
               
