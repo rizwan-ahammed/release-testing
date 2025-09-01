@@ -53,10 +53,56 @@ jobs:
           git commit -m "Release version to ${{ steps.release_info.outputs.release_tag }}"
           git push origin release-test
           
+      - name: Setup ArgoCD CLI
+        run: |
+          # Install ArgoCD CLI
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+          
+          # Install jq for JSON parsing
+          sudo apt-get update
+          sudo apt-get install -y jq
+
       - name: Run deployment to production
         run: |
-           i want to 
+          # Login to ArgoCD
+          export ARGOCD_AUTH_TOKEN=${{ secrets.ARGOCD_AUTH_TOKEN }}
+          argocd login argocd.dev.getcombat.ai --grpc-web --insecure --skip-test-tls
           
+          # Refresh the specific application (replace 'your-app-name' with actual app name)
+          argocd app sync nginx --prune
+          
+          # Wait for deployment status with timeout (5 minutes)
+          timeout 300 bash -c '
+            while true; do
+              status=$(argocd app get your-app-name --output json | jq -r ".status.sync.status")
+              health=$(argocd app get your-app-name --output json | jq -r ".status.health.status")
+              
+              echo "Sync Status: $status, Health Status: $health"
+              
+              if [ "$status" = "Synced" ] && [ "$health" = "Healthy" ]; then
+                echo "✅ Deployment successful!"
+                exit 0
+              elif [ "$status" = "OutOfSync" ] || [ "$status" = "Unknown" ]; then
+                echo "❌ Deployment failed!"
+                exit 1
+              fi
+              
+              sleep 10
+            done
+          '
+          
+          # Get final status for notification
+          final_status=$(argocd app get your-app-name --output json | jq -r ".status.sync.status")
+          final_health=$(argocd app get your-app-name --output json | jq -r ".status.health.status")
+          
+          if [ "$final_status" = "Synced" ] && [ "$final_health" = "Healthy" ]; then
+            echo "DEPLOYMENT_STATUS=success" >> $GITHUB_ENV
+          else
+            echo "DEPLOYMENT_STATUS=failed" >> $GITHUB_ENV
+            exit 1
+          fi
       - name: Notify Slack about pipeline completion
         if: success()
         run: |
@@ -65,11 +111,11 @@ jobs:
             -H 'Content-type: application/json' \
             --data "{
               \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
-              \"text\": \":rocket: Pipeline completed for release *${{ steps.release_info.outputs.release_tag }}*\",
+              \"text\": \":rocket: Pipeline and deployment completed for release *${{ steps.release_info.outputs.release_tag }}*\",
               \"blocks\": [
                 {
                   \"type\": \"section\",
-                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":rocket: *Pipeline Completed Successfully!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":rocket: *Pipeline and Deployment Completed Successfully!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
                 },
                 {
                   \"type\": \"section\",
@@ -81,7 +127,8 @@ jobs:
                   },
                   \"fields\": [
                     {\"type\": \"mrkdwn\", \"text\": \"*Status:*\\n✅ Completed\"},
-                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"}
+                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Deployment:*\\n✅ ArgoCD Sync Successful\"}
                   ]
                 }
               ]
@@ -95,11 +142,11 @@ jobs:
             -H 'Content-type: application/json' \
             --data "{
               \"channel\": \"${{ vars.SLACK_CHANNEL }}\",
-              \"text\": \":x: Pipeline failed for release *${{ steps.release_info.outputs.release_tag }}*\",
+              \"text\": \":x: Pipeline or deployment failed for release *${{ steps.release_info.outputs.release_tag }}*\",
               \"blocks\": [
                 {
                   \"type\": \"section\",
-                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":x: *Pipeline Failed!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
+                  \"text\": {\"type\": \"mrkdwn\", \"text\": \":x: *Pipeline or Deployment Failed!*\\n\\nRelease: *${{ steps.release_info.outputs.release_tag }}*\\nName: ${{ steps.release_info.outputs.release_name }}\"}
                 },
                 {
                   \"type\": \"section\",
@@ -111,7 +158,8 @@ jobs:
                   },
                   \"fields\": [
                     {\"type\": \"mrkdwn\", \"text\": \"*Status:*\\n❌ Failed\"},
-                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"}
+                    {\"type\": \"mrkdwn\", \"text\": \"*Repository:*\\n${{ github.repository }}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Deployment:*\\n❌ ArgoCD Sync Failed\"}
                   ]
                 }
               ]
