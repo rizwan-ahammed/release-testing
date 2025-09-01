@@ -107,7 +107,7 @@ jobs:
               elif [ "$status" = "OutOfSync" ] && [ "$health" = "Healthy" ]; then
                 echo "⚠️ App is OutOfSync but Healthy - this might be expected during updates"
                 echo "Waiting a bit more to see if it syncs..."
-                sleep 20
+                sleep 60
                 # Check again after waiting
                 final_check_status=$(argocd app get nginx --output json | jq -r ".status.sync.status")
                 final_check_health=$(argocd app get nginx --output json | jq -r ".status.health.status")

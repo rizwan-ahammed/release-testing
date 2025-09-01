@@ -45,6 +45,7 @@ generate_random_error() {
 
 # Check environment variable
 if [ "$ENV" = "db_migrate" ]; then
+    testing for error
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting database migration process..."
     
     # Generate 5-10 random migration logs
