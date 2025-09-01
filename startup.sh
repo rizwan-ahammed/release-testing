@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Function to generate random log messages
 generate_random_log() {
