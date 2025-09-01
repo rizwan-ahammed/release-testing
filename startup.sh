@@ -46,8 +46,6 @@ generate_random_error() {
 
 # Check environment variable
 if [ "$ENV" = "db_migrate" ]; then
-    testing for error
-    exit 1
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting database migration process..."
     
     # Generate 5-10 random migration logs
@@ -69,6 +67,8 @@ if [ "$ENV" = "db_migrate" ]; then
 
 elif [ "$ENV" = "api" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting API server..."
+    testing for error
+    exit 1
     
     # Continuous log generation
     while true; do
