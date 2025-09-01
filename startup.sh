@@ -67,8 +67,6 @@ if [ "$ENV" = "db_migrate" ]; then
 
 elif [ "$ENV" = "api" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting API server..."
-    testing for error
-    exit 1
     
     # Continuous log generation
     while true; do
