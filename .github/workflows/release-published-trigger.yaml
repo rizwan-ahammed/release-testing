@@ -68,7 +68,8 @@ jobs:
         run: |
           # Login to ArgoCD
           export ARGOCD_AUTH_TOKEN=${{ secrets.ARGOCD_AUTH_TOKEN }}
-          argocd login argocd.dev.getcombat.ai --grpc-web --insecure --skip-test-tls
+          export ARGOCD_SERVER=${{ vars.ARGOCD_SERVER }}
+          export ARGOCD_OPTS="--grpc-web --insecure --skip-test-tls"
           
           # Refresh the specific application (replace 'your-app-name' with actual app name)
           argocd app sync nginx --prune
