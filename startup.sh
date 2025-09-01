@@ -18,6 +18,7 @@ generate_random_log() {
         "Cache updated successfully"
         "Background job queued"
         "Error handling middleware active"
+        "Cache miss"
     )
     
     local random_index=$((RANDOM % ${#messages[@]}))
