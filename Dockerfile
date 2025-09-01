@@ -1,4 +1,7 @@
-FROM busybox:latest
+FROM alpine:latest
+
+# Install bash
+RUN apk add --no-cache bash
 
 # Create app directory
 WORKDIR /app
@@ -8,4 +11,4 @@ COPY startup.sh /app/startup.sh
 RUN chmod +x /app/startup.sh
 
 # Set default command
-CMD ["/app/startup.sh"]
+CMD ["/bin/bash", "/app/startup.sh"]

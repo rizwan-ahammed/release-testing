@@ -5,7 +5,7 @@ services:
   db-migrate:
     build: .
     environment:
-      ENV: "db migrate"
+      ENV: "db_migrate"
     container_name: db-migrate-test
 
   # API server test
